@@ -62,49 +62,36 @@
         // Generate a unique id for the session
         NSString * uniqueId = [NSString stringWithFormat:@"stonehill.edu.NSURLSessionUploadTaskExample:%f",[[NSDate date] timeIntervalSince1970] * 1000];
 
-        // Initialize session by constructing a NSURLSessionConfiguration
+        // Initialize BACKGROUND session by constructing a NSURLSessionConfiguration
         NSURLSessionConfiguration *configuration =  [NSURLSessionConfiguration backgroundSessionConfigurationWithIdentifier:uniqueId];
-        
         configuration.allowsCellularAccess = NO;
         
+        // Create the session
         self.session = [NSURLSession sessionWithConfiguration:configuration delegate:self delegateQueue:nil];
     }
     
     //
-    // Start upload task... you need a server on the other side to catch this... I used a simple python POST server script.
-    // http://hayageek.com/ios-nsurlsession-example/#get-post
+    // Configure upload task
+    // NOTE: You need an HTTP server to respond to the upload task request.  My server is a very basic python script that is waiting for a POST.
     //
-    //NSURLSessionConfiguration *defaultConfigObject = [NSURLSessionConfiguration defaultSessionConfiguration];
-    //NSURLSession *defaultSession = [NSURLSession sessionWithConfiguration: defaultConfigObject delegate: nil delegateQueue: [NSOperationQueue mainQueue]];
-
     NSURL * url = [NSURL URLWithString:[NSString stringWithFormat:@"http://%@:%@", self.domainIP.text, self.port.text]];
     NSMutableURLRequest * urlRequest = [NSMutableURLRequest requestWithURL:url];
-    //NSString * params =@"name=NSURLSessionUploadExample&loc=USA&age=333&submit=true";
     [urlRequest setHTTPMethod:@"POST"];
-    //[urlRequest setValue:@" forHTTPHeaderField:<#(nonnull NSString *)#>]
-    //[urlRequest setHTTPBody:[params dataUsingEncoding:NSUTF8StringEncoding]];
     
-    /*NSURLSessionDataTask * dataTask =[self.session dataTaskWithRequest:urlRequest
-                                                     completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
-                                                           NSLog(@"%s: response %@ %@\n", __PRETTY_FUNCTION__, response, error);
-                                                           if(error == nil)
-                                                           {
-                                                               NSString * text = [[NSString alloc] initWithData: data encoding: NSUTF8StringEncoding];
-                                                               NSLog(@"%s: error data = %@",__PRETTY_FUNCTION__, text);
-                                                           }
-                                                       }];*/
-    
-    //NSURLSessionDataTask * dataTask =[self.session dataTaskWithRequest:urlRequest ];
-    
-    
+    // The file that is being upload is hardcoded here and is part of the project.  To add your own file:
+    // - use the Finder to drag the file to the xcode project
+    // - Target -> Build Phases -> Copy Bundle Resources -> +
+    // - change -> pathForResource:@"sailing" ofType:@"pdf" to the filename and type of your file
     NSString *filePath = [NSString stringWithFormat:@"file://%@", [[NSBundle mainBundle] pathForResource:@"sailing" ofType:@"pdf"]];
     NSURLSessionUploadTask* uploadTask = [self.session uploadTaskWithRequest:urlRequest fromFile:[NSURL URLWithString:filePath]];
+    
+    // Start upload task
     [uploadTask resume];
 }
 
 
 //
-// Delegate of NSURLSessionDelegate
+// Delegate of NSURLSessionDelegate (NOT CALLED IN THIS EXAMPLE)
 //
 - (void)URLSession:(NSURLSession *)session
 didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge
@@ -134,10 +121,16 @@ didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge
         appDelegate.backgroundCompletionHandler();
         appDelegate.backgroundCompletionHandler = nil;
     }
+    
+    // If we are not in the "active" or foreground then log some background information to the console
+    if (UIApplication.sharedApplication.applicationState != UIApplicationStateActive)
+    {
+        [BackgroundTimeRemainingUtility NSLog];
+    }
 }
 
 //
-// Delegate of NSURLSessionDataDelegate
+// Delegate of NSURLSessionDataDelegate (NOT CALLED IN THIS EXAMPLE)
 //
 - (void)URLSession:(NSURLSession *)session
           dataTask:(NSURLSessionDataTask *)dataTask
@@ -149,13 +142,13 @@ didReceiveResponse:(NSURLResponse *)response
 }
 
 //
-// Delegate of NSURLSessionDataDelegate
+// Delegate of NSURLSessionDataDelegate (NOT CALLED IN THIS EXAMPLE)
 //
 - (void)URLSession:(NSURLSession *)session
           dataTask:(NSURLSessionDataTask *)dataTask
 didBecomeDownloadTask:(NSURLSessionDownloadTask *)downloadTask
 {
-    // Called when task switches to a download task (not applicable for straight upload?)
+    // Called when task switches to a download task (not applicable for this upload example)
     NSLog(@"%s", __PRETTY_FUNCTION__);
 }
 
@@ -175,6 +168,12 @@ didBecomeDownloadTask:(NSURLSessionDownloadTask *)downloadTask
     {
         NSLog(@"%s: but no actual data received.", __PRETTY_FUNCTION__);
     }
+    
+    // If we are not in the "active" or foreground then log some background information to the console
+    if (UIApplication.sharedApplication.applicationState != UIApplicationStateActive)
+    {
+        [BackgroundTimeRemainingUtility NSLog];
+    }
 }
 
 //
@@ -189,10 +188,16 @@ didBecomeDownloadTask:(NSURLSessionDownloadTask *)downloadTask
     {
         NSLog(@"%s succeeded with response: %@",  __PRETTY_FUNCTION__, task.response);
     }
+    
+    // If we are not in the "active" or foreground then log some background information to the console
+    if (UIApplication.sharedApplication.applicationState != UIApplicationStateActive)
+    {
+        [BackgroundTimeRemainingUtility NSLog];
+    }
 }
 
 //
-// Delegate of NSURLSessionTaskDelegate
+// Delegate of NSURLSessionTaskDelegate (NOT CALLED IN THIS EXAMPLE)
 //
 - (void)URLSession:(NSURLSession *)session
               task:(NSURLSessionTask *)task
@@ -205,7 +210,7 @@ didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge
 }
 
 //
-// Delegate of NSURLSessionTaskDelegate
+// Delegate of NSURLSessionTaskDelegate (NOT CALLED IN THIS EXAMPLE)
 //
 - (void)URLSession:(NSURLSession *)session
           dataTask:(NSURLSessionDataTask *)dataTask
@@ -235,7 +240,7 @@ totalBytesExpectedToSend:(int64_t)totalBytesExpectedToSend
     NSTimeInterval executionTime = [stopTime timeIntervalSinceDate:_startTime];
     
     // Send info to console
-    NSLog(@"%s bytesSent = %lld, totalBytesSent: %lld, totalBytesExpectedTodSend: %lld, progress %.3f, time (s): %.1f", __PRETTY_FUNCTION__, bytesSent, totalBytesSent, totalBytesExpectedToSend, progress*100, executionTime);
+    NSLog(@"%s bytesSent = %lld, totalBytesSent: %lld, totalBytesExpectedToSend: %lld, progress %.3f, time (s): %.1f", __PRETTY_FUNCTION__, bytesSent, totalBytesSent, totalBytesExpectedToSend, progress*100, executionTime);
     
     // Update UI
     dispatch_block_t work_to_do = ^{
@@ -260,21 +265,24 @@ totalBytesExpectedToSend:(int64_t)totalBytesExpectedToSend
 }
 
 //
-// Delegate of NSURLSessionTaskDelegate
+// Delegate of NSURLSessionTaskDelegate  (NOT CALLED IN THIS EXAMPLE)
 //
 - (void)URLSession:(NSURLSession *)session
               task:(NSURLSessionTask *)task
  needNewBodyStream:(void (^)(NSInputStream *bodyStream))completionHandler
 {
-    /* 
-     * This delegate method is called under two circumstances:
-     * - To provide the initial request body stream if the task was created with uploadTaskWithStreamedRequest:
-     * - To provide a replacement request body stream if the task needs to resend a request that has a body stream because of an authentication challenge or other recoverable server error.
-     */
-    
+    //
+    //This delegate method is called under two circumstances:
+    //- To provide the initial request body stream if the task was created with uploadTaskWithStreamedRequest:
+    //- To provide a replacement request body stream if the task needs to resend a request that has a body stream because of an authentication challenge or other recoverable serve error.
+    //
      NSLog(@"%s", __PRETTY_FUNCTION__);
 }
 
+
+//
+// Delegate of NSURLSessionTaskDelegate  (NOT CALLED IN THIS EXAMPLE)
+//
 - (void)URLSession:(NSURLSession *)session
               task:(NSURLSessionTask *)task
 willPerformHTTPRedirection:(NSHTTPURLResponse *)response
